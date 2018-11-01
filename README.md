@@ -15,7 +15,7 @@ npm install
 ```
 node app
 ```
-Now visit http://127.0.0.1:8080/api/v1 in your browser.
+Now visit http://127.0.0.1:8080/ in your browser.
 
 Postman Collection
 --------
