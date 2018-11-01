@@ -2,18 +2,72 @@
 
 const auth = require('basic-auth');
 const jwt = require('jsonwebtoken');
+const register = require('../functions/register');
+const login = require('../functions/login');
+const profile = require('../functions/profile');
+const password = require('../functions/password');
+const config = require('../config/config.json');
+var constants = require('../constants/constants.json');
+var registerDevice = require('../functions/registerDevice');
+var devicesFunction = require('../functions/devices');
+var deleteFunction = require('../functions/delete');
+var sendFunction = require('../functions/send-message');
 
-const register = require('./functions/register');
-const login = require('./functions/login');
-const profile = require('./functions/profile');
-const password = require('./functions/password');
-const config = require('./config/config.json');
 
-module.exports = router => {
+module.exports = function(app,io) {
 
-	router.get('/', (req, res) => res.end('Welcome to PulsR !'));
 
-	router.post('/authenticate', (req, res) => {
+	io.on('connection', function(socket){
+
+		console.log("Client Connected");
+		socket.emit('update', { message: 'Hello Client',update:false });
+
+  		socket.on('update', function(msg){
+
+    		console.log(msg);
+  		});
+	});
+
+	app.get('/',function(req,res) {
+
+		res.sendFile('index.html');
+
+	});
+
+	app.get('/devices',function(req,res) {
+
+		devicesFunction.listDevices(function(result) {
+
+			res.json(result);
+
+		});
+	});
+
+	app.delete('/devices/:device',function(req,res) {
+
+		var registrationId = req.params.device;
+
+		deleteFunction.removeDevice(registrationId,function(result) {
+
+			res.json(result);
+
+		});
+
+
+	});
+
+	app.post('/send',function(req,res){
+
+		var message = req.body.message;
+		var registrationId = req.body.registrationId;
+
+		sendFunction.sendMessage(message,registrationId,function(result){
+
+			res.json(result);
+		});
+	});
+
+	app.post('/authenticate',function (req, res) {
 
 		const credentials = auth(req);
 
@@ -37,7 +91,7 @@ module.exports = router => {
 		}
 	});
 
-	router.post('/users', (req, res) => {
+	app.post('/users',function (req, res) {
 
 		const name = req.body.name;
 		const email = req.body.email;
@@ -61,7 +115,7 @@ module.exports = router => {
 		}
 	});
 
-	router.get('/users/:id', (req,res) => {
+	app.get('/users/:id',function (req,res) {
 
 		if (checkToken(req)) {
 
@@ -77,7 +131,7 @@ module.exports = router => {
 		}
 	});
 
-	router.put('/users/:id', (req,res) => {
+	app.put('/users/:id',function (req,res) {
 
 		if (checkToken(req)) {
 
@@ -103,7 +157,40 @@ module.exports = router => {
 		}
 	});
 
-	router.post('/users/:id/password', (req,res) => {
+	app.post('/devices',function(req,res) {
+
+		var deviceName = req.body.deviceName;
+		var deviceId   = req.body.deviceId;
+		var registrationId = req.body.registrationId;
+
+		if ( typeof deviceName  == 'undefined' || typeof deviceId == 'undefined' || typeof registrationId  == 'undefined' ) {
+
+			console.log(constants.error.msg_invalid_param.message);
+
+			res.json(constants.error.msg_invalid_param);
+
+		} else if ( !deviceName.trim() || !deviceId.trim() || !registrationId.trim() ) {
+
+			console.log(constants.error.msg_empty_param.message);
+
+			res.json(constants.error.msg_empty_param);
+
+		} else {
+
+			registerDevice.register( deviceName, deviceId, registrationId, function(result) {
+
+				res.json(result);
+
+				if (result.result != 'error'){
+
+					io.emit('update', { message: 'New Device Added',update:true});
+
+				}
+			});
+		}
+	});
+
+	app.post('/users/:id/password',function (req,res) {
 
 		const email = req.params.id;
 		const token = req.body.token;
@@ -135,9 +222,9 @@ module.exports = router => {
 
 			try {
 
-  				var decoded = jwt.verify(token, config.secret);
+					var decoded = jwt.verify(token, config.secret);
 
-  				return decoded.message === req.params.id;
+					return decoded.message === req.params.id;
 
 			} catch(err) {
 

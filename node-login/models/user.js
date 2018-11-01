@@ -2,9 +2,9 @@
 
 const mongoose = require('mongoose');
 
-const Schema = mongoose.Schema;
+var Schema = mongoose.Schema;
 
-const userSchema = mongoose.Schema({
+var userSchema = mongoose.Schema({
 
 	name 			: String,
 	email			: {type: String, unique: true},
@@ -16,6 +16,6 @@ const userSchema = mongoose.Schema({
 });
 
 mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://localhost:27017/node-login');
+mongoose.connect('mongodb://localhost:27017/node-android-push');
 
 module.exports = mongoose.model('user', userSchema);
