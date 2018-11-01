@@ -10,6 +10,6 @@ var deviceSchema = mongoose.Schema({
 
 });
 
-mongoose.connect('mongodb://localhost:27017/node-PulsR');
+mongoose.createConnection('mongodb://localhost:27017/node-PulsR');
 
 module.exports = mongoose.model('device', deviceSchema);
